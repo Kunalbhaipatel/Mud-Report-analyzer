@@ -64,7 +64,12 @@ def extract_data_from_pdf(pdf_file):
                 "YP": yp,
                 "Electrical Stability": es,
                 "Additions (bbl)": additions,
-                "Losses (bbl)": losses
+                "Losses (bbl)": losses,
+                # Derived calculations
+                "Total Dilution (bbl)": additions - losses if additions > losses else 0,
+                "Total SCE (bbl)": losses,  # Simplified assumption
+                "Mud Cutting Ratio": (losses / additions) if additions > 0 else None,
+                "DSRE %": (losses / (additions + losses) * 100) if (additions + losses) > 0 else None
             })
     return pd.DataFrame(data)
 
@@ -91,12 +96,38 @@ if uploaded_files:
     if not combined_df.empty:
         st.success(f"✅ Finished processing {len(uploaded_files)} report(s).")
 
+        # Filter section
+        with st.sidebar:
+            st.header("🔍 Filter Data")
+            date_range = st.date_input("Select Date Range", [combined_df["Date"].min(), combined_df["Date"].max()])
+            min_dsr = st.slider("DSRE % Range", 0.0, 100.0, (0.0, 100.0))
+            min_mcr = st.slider("Mud Cutting Ratio Range", 0.0, 2.0, (0.0, 2.0))
+
+        filtered_df = combined_df[
+            (combined_df["Date"] >= pd.to_datetime(date_range[0])) &
+            (combined_df["Date"] <= pd.to_datetime(date_range[1])) &
+            (combined_df["DSRE %"].between(min_dsr[0], min_dsr[1])) &
+            (combined_df["Mud Cutting Ratio"].between(min_mcr[0], min_mcr[1]))
+        ]
+
+        tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Charts", "🤖 ML Insights"])} report(s).")
+
         combined_df["Date"] = pd.to_datetime(combined_df["Date"], errors="coerce")
         combined_df = combined_df.sort_values("Date")
 
-        st.subheader("Extracted Summary Table")
+        # Additional Calculations
+        combined_df["Dilution per Hole Volume"] = combined_df["Total Dilution (bbl)"] / (combined_df["Additions (bbl)"] + 1e-6)
+        combined_df["Baseoil per Hour"] = combined_df["Total Dilution (bbl)"] / 24.0  # Assuming daily data with 24hr operation
+
+        with tab1:
+        st.subheader("📊 Enhanced Calculations")
+        summary_cols = ["Date", "Mud Weight", "Total Dilution (bbl)", "Total SCE (bbl)", "DSRE %", "Mud Cutting Ratio", "Dilution per Hole Volume", "Baseoil per Hour"]
+        st.dataframe(combined_df[summary_cols].dropna())
+
+        st.subheader("📋 Raw Extracted Data Table")
         st.dataframe(combined_df)
 
+        with tab2:
         st.subheader("🌍 Mud Properties Over Time")
         try:
             fig1 = px.line(
@@ -121,6 +152,35 @@ if uploaded_files:
         except ValueError:
             st.warning("⚠️ Could not render Additions vs. Losses chart — missing or invalid data.")
 
+        st.subheader("📉 Baseoil & Dilution Performance")
+        try:
+            fig4 = px.line(
+                combined_df.dropna(subset=["Baseoil per Hour", "Dilution per Hole Volume"]),
+                x="Date",
+                y=["Baseoil per Hour", "Dilution per Hole Volume"],
+                markers=True,
+                title="Baseoil Usage & Dilution Efficiency"
+            )
+            fig4.add_hrect(y0=0.8, y1=1.5, line_width=0, fillcolor="green", opacity=0.2, annotation_text="Optimal Range", annotation_position="top left")
+            st.plotly_chart(fig4, use_container_width=True)
+        except ValueError:
+            st.warning("⚠️ Could not render Baseoil and Dilution chart — missing or invalid data.")
+        except ValueError:
+            st.warning("⚠️ Could not render Baseoil and Dilution chart — missing or invalid data.")
+
+        st.subheader("📊 Correlation: Mud Cutting Ratio vs. Losses")
+        try:
+            fig_corr = px.scatter(
+                combined_df.dropna(subset=["Mud Cutting Ratio", "Losses (bbl)"]),
+                x="Mud Cutting Ratio",
+                y="Losses (bbl)",
+                trendline="ols",
+                title="Mud Cutting Ratio vs Losses"
+            )
+            st.plotly_chart(fig_corr, use_container_width=True)
+        except ValueError:
+            st.warning("⚠️ Could not render correlation plot — missing or invalid data.")
+
         st.subheader("🔌 Electrical Stability")
         try:
             fig3 = px.line(
@@ -133,7 +193,7 @@ if uploaded_files:
         except ValueError:
             st.warning("⚠️ Could not render Electrical Stability chart — missing or invalid data.")
 
-        # Machine Learning Section
+        with tab3:
         st.subheader("🤖 ML Insights")
         df_ml = combined_df.dropna()
         if len(df_ml) > 5:
