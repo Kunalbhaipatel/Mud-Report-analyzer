@@ -98,16 +98,40 @@ if uploaded_files:
         st.dataframe(combined_df)
 
         st.subheader("🌍 Mud Properties Over Time")
-        fig1 = px.line(combined_df, x="Date", y=["Mud Weight", "PV", "YP"], markers=True)
-        st.plotly_chart(fig1, use_container_width=True)
+        try:
+            fig1 = px.line(
+                combined_df.dropna(subset=["Mud Weight", "PV", "YP"]),
+                x="Date",
+                y=["Mud Weight", "PV", "YP"],
+                markers=True
+            )
+            st.plotly_chart(fig1, use_container_width=True)
+        except ValueError:
+            st.warning("⚠️ Could not render Mud Properties chart — missing or invalid data.")
 
         st.subheader("🚧 Additions vs. Losses")
-        fig2 = px.bar(combined_df, x="Date", y=["Additions (bbl)", "Losses (bbl)"], barmode="group")
-        st.plotly_chart(fig2, use_container_width=True)
+        try:
+            fig2 = px.bar(
+                combined_df.dropna(subset=["Additions (bbl)", "Losses (bbl)"]),
+                x="Date",
+                y=["Additions (bbl)", "Losses (bbl)"],
+                barmode="group"
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+        except ValueError:
+            st.warning("⚠️ Could not render Additions vs. Losses chart — missing or invalid data.")
 
         st.subheader("🔌 Electrical Stability")
-        fig3 = px.line(combined_df, x="Date", y="Electrical Stability", markers=True)
-        st.plotly_chart(fig3, use_container_width=True)
+        try:
+            fig3 = px.line(
+                combined_df.dropna(subset=["Electrical Stability"]),
+                x="Date",
+                y="Electrical Stability",
+                markers=True
+            )
+            st.plotly_chart(fig3, use_container_width=True)
+        except ValueError:
+            st.warning("⚠️ Could not render Electrical Stability chart — missing or invalid data.")
 
         # Machine Learning Section
         st.subheader("🤖 ML Insights")
