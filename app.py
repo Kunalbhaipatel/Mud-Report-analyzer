@@ -110,7 +110,8 @@ if uploaded_files:
             (combined_df["Mud Cutting Ratio"].between(min_mcr[0], min_mcr[1]))
         ]
 
-        tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Charts", "🤖 ML Insights"])} report(s).")
+        tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Charts", "🤖 ML Insights"])
+")
 
         combined_df["Date"] = pd.to_datetime(combined_df["Date"], errors="coerce")
         combined_df = combined_df.sort_values("Date")
@@ -120,7 +121,7 @@ if uploaded_files:
         combined_df["Baseoil per Hour"] = combined_df["Total Dilution (bbl)"] / 24.0  # Assuming daily data with 24hr operation
 
         with tab1:
-        st.subheader("📊 Enhanced Calculations")
+            st.subheader("📊 Enhanced Calculations")
         summary_cols = ["Date", "Mud Weight", "Total Dilution (bbl)", "Total SCE (bbl)", "DSRE %", "Mud Cutting Ratio", "Dilution per Hole Volume", "Baseoil per Hour"]
         st.dataframe(combined_df[summary_cols].dropna())
 
@@ -128,7 +129,7 @@ if uploaded_files:
         st.dataframe(combined_df)
 
         with tab2:
-        st.subheader("🌍 Mud Properties Over Time")
+            st.subheader("🌍 Mud Properties Over Time")
         try:
             fig1 = px.line(
                 combined_df.dropna(subset=["Mud Weight", "PV", "YP"]),
@@ -194,7 +195,7 @@ if uploaded_files:
             st.warning("⚠️ Could not render Electrical Stability chart — missing or invalid data.")
 
         with tab3:
-        st.subheader("🤖 ML Insights")
+            st.subheader("🤖 ML Insights")
         df_ml = combined_df.dropna()
         if len(df_ml) > 5:
             X = df_ml[["Mud Weight", "PV", "YP", "Electrical Stability"]]
