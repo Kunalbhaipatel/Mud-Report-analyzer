@@ -104,8 +104,8 @@ if uploaded_files:
             min_mcr = st.slider("Mud Cutting Ratio Range", 0.0, 2.0, (0.0, 2.0))
 
         filtered_df = combined_df[
-            (combined_df["Date"] >= pd.to_datetime(date_range[0])) &
-            (combined_df["Date"] <= pd.to_datetime(date_range[1])) &
+            (pd.to_datetime(combined_df["Date"], errors="coerce") >= pd.to_datetime(date_range[0])) &
+            (pd.to_datetime(combined_df["Date"], errors="coerce") <= pd.to_datetime(date_range[1])) &
             (combined_df["DSRE %"].between(min_dsr[0], min_dsr[1])) &
             (combined_df["Mud Cutting Ratio"].between(min_mcr[0], min_mcr[1]))
         ]
