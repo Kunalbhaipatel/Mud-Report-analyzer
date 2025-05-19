@@ -49,15 +49,48 @@ def extract_data_from_pdf(pdf_file):
         es_match = re.search(r"Elec\. Stability V\s+(\d+)", full_text)
         es = int(es_match.group(1)) if es_match else None
 
-        # Extract losses and additions
-        add_match = re.findall(r"Additions bbl\s+([\d\.]+).*?Total Losses\s+([\d\.]+)", full_text, re.DOTALL)
-        if add_match:
-            additions, losses = map(float, add_match[0])
-        else:
-            additions = losses = 0.0
+        # Extract detailed components
+        base_match = re.search(r"Base\s+(\d+\.\d+)", full_text)
+        water_match = re.search(r"Drill Water\s+(\d+\.\d+)", full_text)
+        barite_match = re.search(r"Barite\s+(\d+\.\d+)", full_text)
+        chem_match = re.search(r"Chemicals\s+(\d+\.\d+)", full_text)
+
+        downhole_match = re.search(r"Downhole\s+(\d+\.\d+)", full_text)
+        evap_match = re.search(r"Evaporation\s+(\d+\.\d+)", full_text)
+        other_match = re.search(r"Other Loss\s+(\d+\.\d+)", full_text)
+
+        lgs_match = re.search(r"LGS\s*%\s*[:=]?\s*(\d+\.\d+)", full_text)
+        circ_match = re.search(r"Total Circ.*?(\d+\.\d+)", full_text)
+        hours_match = re.search(r"Drilling Hours\s+(\d+\.\d+)", full_text)
+
+        base = float(base_match.group(1)) if base_match else 0
+        water = float(water_match.group(1)) if water_match else 0
+        barite = float(barite_match.group(1)) if barite_match else 0
+        chemical = float(chem_match.group(1)) if chem_match else 0
+
+        downhole = float(downhole_match.group(1)) if downhole_match else 0
+        evap = float(evap_match.group(1)) if evap_match else 0
+        other = float(other_match.group(1)) if other_match else 0
+
+        additions = base + water + barite + chemical
+        losses = downhole + evap + other
+
+        lgs = float(lgs_match.group(1)) if lgs_match else None
+        circ = float(circ_match.group(1)) if circ_match else 0
+        hours = float(hours_match.group(1)) if hours_match else 24
 
         if date:  # Only add row if valid date exists
             data.append({
+                "Base Oil (bbl)": base,
+                "Drill Water (bbl)": water,
+                "Barite (bbl)": barite,
+                "Chemical (bbl)": chemical,
+                "Downhole Loss (bbl)": downhole,
+                "Evaporation Loss (bbl)": evap,
+                "Other Loss (bbl)": other,
+                "LGS (%)": lgs,
+                "Total Circ Volume (bbl)": circ,
+                "Drilling Hours": hours,
                 "Base (bbl)": float(base_match.group(1)) if base_match else 0,
                 "Water (bbl)": float(water_match.group(1)) if water_match else 0,
                 "Barite (bbl)": float(barite_match.group(1)) if barite_match else 0,
